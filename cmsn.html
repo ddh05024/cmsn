@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>커미션 프로필 시트 메이커</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f3ef;--cd:#fff;--tx:#23262b;--mu:#757b85;--ln:#e2dfd8;--ac:#4f5fd8;--in:#faf9f6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15171a;--cd:#1f2226;--tx:#eceef1;--mu:#9aa1ab;--ln:#33373e;--in:#171a1d;--ac:#8c98ff}}
+:root[data-theme="dark"]{--bg:#15171a;--cd:#1f2226;--tx:#eceef1;--mu:#9aa1ab;--ln:#33373e;--in:#171a1d;--ac:#8c98ff}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Noto Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.5}
+header{padding:20px 18px 6px;max-width:1400px;margin:auto}
+h1{font-size:20px;margin:0}header p{margin:4px 0 0;color:var(--mu);font-size:13px}
+.app{display:grid;gap:16px;padding:12px 18px 40px;max-width:1400px;margin:auto}
+@media(min-width:960px){.app{grid-template-columns:400px 1fr;align-items:start}.pv{position:sticky;top:12px}}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:16px;padding:16px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:14px;letter-spacing:.04em}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:10px}
+input[type=text],textarea,select{width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--ln);border-radius:10px;background:var(--in);color:var(--tx);font:inherit;font-size:14px}
+textarea{resize:vertical}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+.col input{width:100%;height:42px;margin-top:4px;border:1px solid var(--ln);border-radius:10px;padding:2px;background:var(--in)}
+.col input:disabled{opacity:.45}
+.chk{display:flex;gap:8px;align-items:center;color:var(--tx)}
+.files{display:grid;grid-template-columns:1fr 1fr;gap:8px}.files input{width:100%;font-size:12px;margin-top:4px}
+.seg{display:flex;gap:6px;background:var(--in);border:1px solid var(--ln);border-radius:12px;padding:4px}
+.seg button{flex:1;border:0;border-radius:9px;padding:9px;background:none;color:var(--mu);font:inherit;font-weight:500;cursor:pointer}
+.seg button.on{background:var(--ac);color:#fff}
+.btn{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.pvbox{background:var(--cd);border:1px solid var(--ln);border-radius:16px;padding:12px;overflow:hidden}
+canvas{display:block;width:100%;height:auto;border-radius:8px}
+#msg{font-size:12px;color:var(--mu);margin:8px 2px 0;min-height:18px}
+</style></head><body>
+<header><h1>커미션 프로필 시트 메이커</h1><p>이미지와 글을 넣으면 시트가 실시간으로 만들어지고, 고화질 PNG로 저장할 수 있어요.</p></header>
+<div class="app">
+<div>
+ <div class="card"><div class="seg" id="seg"><button data-m="1" class="on">1인 시트</button><button data-m="2">2인 시트</button></div></div>
+ <div class="card"><label>시트 제목<input type="text" id="title" maxlength="40"></label>
+  <label style="margin:0">두상 이미지 배치<select id="fit"><option value="cover">프레임 꽉 채우기 (위쪽 기준)</option><option value="contain">이미지 전체 보이기</option></select></label></div>
+ <div id="forms"></div>
+ <div class="card" id="relc" hidden><label style="margin:0">관계 · 구도 메모 (2인)<textarea id="rel" rows="3" placeholder="예) 연인 / 서로 마주 보는 구도 / 키 차이 강조"></textarea></label></div>
+</div>
+<div class="pv">
+ <div class="pvbox"><canvas id="cv"></canvas></div>
+ <p id="msg"></p>
+ <button class="btn" id="dl">PNG 이미지로 저장 (고화질 2×)</button>
+</div>
+</div>
+<script>
+const F='"Noto Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+const S={mode:1,title:'COMMISSION PROFILE',fit:'cover',rel:'',im:[{},{}],c:[
+{name:'캐릭터 이름',basic:'남성 · 180cm · 보통 체형',feat:'차분한 눈매\n은은한 미소\n단정한 셔츠 + 재킷',note:'분위기 : 차분하고 다정한 인상\n의상 : 심플한 단색 위주',skin:'#f3d8c4',hair:'#7b5e4b',eyeL:'#4f9bc9',eyeR:'#4f9bc9',sync:true,pupL:'round',pupR:'round'},
+{name:'캐릭터 이름 B',basic:'여성 · 165cm · 슬렌더',feat:'긴 생머리\n또렷한 눈매\n포인트 귀걸이',note:'분위기 : 밝고 선명한 인상\n의상 : 포인트 컬러 사용',skin:'#f8e2d3',hair:'#2f3440',eyeL:'#c0554b',eyeR:'#c0554b',sync:true,pupL:'round',pupR:'round'}]};
+const $=s=>document.querySelector(s);
+const mx=(h,t,a)=>{const n=parseInt(h.slice(1),16);return'rgb('+[n>>16,n>>8&255,n&255].map(v=>Math.round(v*a+t*(1-a))).join()+')'};
+const rr=(c,x,y,w,h,r)=>{c.beginPath();c.roundRect(x,y,w,h,r)};
+function wrap(c,t,mw){const o=[];for(const p of t.split('\n')){let l='';for(const ch of p){if(c.measureText(l+ch).width>mw&&l){o.push(l);l=ch}else l+=ch}o.push(l)}return o}
+function fitText(c,t,x,y,w,h,o){
+ for(let fs=o.max;fs>=o.min;fs-=2){c.font=`400 ${fs}px ${F}`;const lh=fs*1.5,ind=o.b?fs*1.1:0,L=[];
+  for(const it of t.split('\n')){if(o.b&&!it.trim())continue;wrap(c,it,w-ind).forEach((l,j)=>L.push([l,o.b&&j==0]))}
+  if(L.length*lh<=h||fs==o.min){L.forEach(([l,b],n)=>{const yy=y+lh*(n+.8);if(yy>y+h+fs)return;
+   if(b){c.fillStyle=o.acc;c.beginPath();c.arc(x+fs*.3,yy-fs*.32,fs*.14,0,7);c.fill()}
+   c.fillStyle='#2b2e33';c.fillText(l,x+ind,yy)});return}}}
+function card(c,x,y,w,h,lab,acc){rr(c,x,y,w,h,28);c.fillStyle='#fff';c.fill();c.strokeStyle='#e4e1da';c.lineWidth=2;c.stroke();
+ c.fillStyle=acc;c.font=`700 20px ${F}`;if('letterSpacing'in c)c.letterSpacing='3px';c.fillText(lab,x+28,y+44);if('letterSpacing'in c)c.letterSpacing='0px'}
+function frame(c,x,y,w,h,lab,img,mode,bg,acc){
+ rr(c,x,y,w,h,36);c.fillStyle=bg;c.fill();c.save();c.clip();
+ if(img){const s=(mode=='cover'?Math.max:Math.min)(w/img.width,h/img.height),dw=img.width*s,dh=img.height*s;
+  c.drawImage(img,x+(w-dw)/2,mode=='cover'?y:y+(h-dh)/2,dw,dh)}
+ else{c.fillStyle=acc;c.globalAlpha=.55;c.font=`500 24px ${F}`;c.textAlign='center';c.fillText('이미지를 추가해 주세요',x+w/2,y+h/2);c.textAlign='left';c.globalAlpha=1}
+ c.restore();rr(c,x,y,w,h,36);c.strokeStyle=mx(acc.startsWith('#')?acc:'#888888',255,.3);c.strokeStyle='rgba(0,0,0,.08)';c.lineWidth=2;c.stroke();
+ c.font=`700 20px ${F}`;const tw=c.measureText(lab).width+36;rr(c,x+22,y+22,tw,38,19);c.fillStyle=acc;c.fill();c.fillStyle='#fff';c.fillText(lab,x+40,y+48)}
+const PUP=[['round','둥근 동공'],['vslit','세로 슬릿'],['hslit','가로 슬릿 (염소)'],['star','별'],['heart','하트'],['diamond','마름모'],['ring','겹원 (링)'],['none','없음 (죽은 눈)']];
+function pupil(c,cx,cy,r,t,col){
+ const p=mx(col,0,.25);c.fillStyle=p;c.strokeStyle=p;c.beginPath();
+ if(t=='round')c.arc(cx,cy,r*.42,0,7);
+ else if(t=='vslit')c.ellipse(cx,cy,r*.15,r*.78,0,0,7);
+ else if(t=='hslit')c.ellipse(cx,cy,r*.74,r*.2,0,0,7);
+ else if(t=='star'){for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,q=k%2?r*.22:r*.56;c[k?'lineTo':'moveTo'](cx+q*Math.cos(a),cy+q*Math.sin(a))}c.closePath()}
+ else if(t=='heart'){const s=r*.5;c.moveTo(cx,cy+s*.9);c.bezierCurveTo(cx-s*1.5,cy-s*.1,cx-s*.7,cy-s*1.1,cx,cy-s*.4);c.bezierCurveTo(cx+s*.7,cy-s*1.1,cx+s*1.5,cy-s*.1,cx,cy+s*.9)}
+ else if(t=='diamond'){c.moveTo(cx,cy-r*.62);c.lineTo(cx+r*.36,cy);c.lineTo(cx,cy+r*.62);c.lineTo(cx-r*.36,cy);c.closePath()}
+ else if(t=='ring'){c.arc(cx,cy,r*.5,0,7);c.lineWidth=r*.14;c.stroke();c.beginPath();c.arc(cx,cy,r*.2,0,7)}
+ else return;
+ c.fill()}
+function eye(c,cx,cy,r,col,t){c.beginPath();c.arc(cx,cy,r,0,7);c.fillStyle=col;c.fill();c.strokeStyle='rgba(0,0,0,.14)';c.lineWidth=3;c.stroke();pupil(c,cx,cy,r,t,col);
+ if(t!='none'){c.fillStyle='#fff';c.beginPath();c.arc(cx-r*.3,cy-r*.3,r*.14,0,7);c.fill()}}
+function panel(c,i){
+ const d=S.c[i],im=S.im[i],acc=mx(d.hair,20,.55),bg=mx(d.hair,255,.16),two=S.mode==2,fl=two&&i==0,right=two&&!fl;
+ const s=two?12:60,rx=s+600,rw=1140-rx,bw=(1140-s-40)/2,X=(x,w)=>fl?1200-x-w:x;
+ const nw=1080-(two?80:0),ax=two?(right?1060:140):60;
+ if(two){const bx=right?1110:90;c.fillStyle=acc;c.beginPath();c.arc(bx,62,30,0,7);c.fill();c.fillStyle='#fff';c.font=`700 30px ${F}`;c.textAlign='center';c.fillText(i?'B':'A',bx,73)}
+ c.textAlign=right?'right':'left';
+ let fs=72;c.font=`700 ${fs}px ${F}`;while(c.measureText(d.name||' ').width>nw&&fs>34){fs-=2;c.font=`700 ${fs}px ${F}`}
+ c.fillStyle='#23262b';c.fillText(d.name,ax,78);
+ c.font=`500 30px ${F}`;c.fillStyle='#7d828b';c.fillText(d.basic,ax,128);c.textAlign='left';
+ frame(c,X(s,560),160,560,760,'SD',im.sd,'contain',bg,acc);
+ frame(c,X(rx,rw),160,rw,380,'FACE',im.head,S.fit,bg,acc);
+ const px=X(rx,rw),cw=(rw-48)/2;card(c,px,570,rw,350,'COLOR PALETTE',acc);
+ [['skin','피부'],['hair','헤어'],['eyeL','왼쪽 눈'],['eyeR','오른쪽 눈']].forEach(([k,l],n)=>{
+  const cx=px+24+(n%2)*cw,cy=654+(n>>1)*130,col=d[k];
+  if(k[0]=='e')eye(c,cx+36,cy+36,36,col,d[k=='eyeL'?'pupL':'pupR']);
+  else{c.beginPath();c.arc(cx+36,cy+36,36,0,7);c.fillStyle=col;c.fill();c.strokeStyle='rgba(0,0,0,.14)';c.lineWidth=3;c.stroke()}
+  c.fillStyle='#7d828b';c.font=`500 21px ${F}`;c.fillText(l,cx+88,cy+30);c.fillStyle='#2b2e33';c.font=`500 23px ${F}`;c.fillText(col.toUpperCase(),cx+88,cy+62)});
+ const fx=X(s,bw),nx=X(s+bw+40,bw);
+ card(c,fx,950,bw,330,'FEATURES',acc);fitText(c,d.feat,fx+28,1020,bw-56,236,{max:28,min:18,b:1,acc});
+ card(c,nx,950,bw,330,'NOTES',acc);fitText(c,d.note,nx+28,1020,bw-56,236,{max:28,min:18,b:0,acc});
+}
+function draw(cv,sc){
+ const two=S.mode==2,W=two?2400:1200,H=two?1740:1540;cv.width=W*sc;cv.height=H*sc;
+ const c=cv.getContext('2d');c.scale(sc,sc);c.fillStyle='#fbfaf7';c.fillRect(0,0,W,H);
+ c.fillStyle=mx(S.c[0].hair,20,.55);rr(c,60,50,10,56,5);c.fill();
+ c.fillStyle='#23262b';c.font=`700 40px ${F}`;if('letterSpacing'in c)c.letterSpacing='4px';c.fillText(S.title,92,96);if('letterSpacing'in c)c.letterSpacing='0px';
+ c.fillStyle='#8a8f98';c.font=`500 22px ${F}`;c.textAlign='right';c.fillText((two?'2P':'1P')+' · CHARACTER SHEET',W-60,92);c.textAlign='left';
+ c.strokeStyle='#e6e3dd';c.lineWidth=2;c.beginPath();c.moveTo(60,134);c.lineTo(W-60,134);c.stroke();
+ for(let i=0;i<(two?2:1);i++){c.save();c.translate(i*1200,170);panel(c,i);c.restore()}
+ if(two){const bc=mx(S.c[0].hair,20,.55);c.beginPath();c.arc(1200,710,26,0,7);c.fillStyle='#fff';c.fill();c.strokeStyle=bc;c.lineWidth=3;c.stroke();c.fillStyle=bc;c.font=`700 30px ${F}`;c.textAlign='center';c.fillText('&',1200,721);c.textAlign='left';
+  const a=mx(S.c[0].hair,20,.55);card(c,60,1480,2280,190,'RELATION · 관계 / 구도',a);fitText(c,S.rel||'',88,1550,2224,106,{max:28,min:18,b:0,acc:a})}
+ c.fillStyle='#9a9ea6';c.font=`400 20px ${F}`;c.textAlign='right';c.fillText('made by @ponene_cmsn',W-60,H-34);c.textAlign='left';
+}
+const cv=$('#cv');let raf=0;
+const go=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>draw(cv,S.mode==2?1:1.5))};
+function form(i){return`<section class="card" data-i="${i}"><h3>${i?'캐릭터 B':'캐릭터 A'}</h3>
+<label>이름<input type="text" data-k="name" maxlength="30"></label>
+<label>기본 정보 (성별 · 키 · 체형 등)<input type="text" data-k="basic" maxlength="50"></label>
+<label>특징 (한 줄에 하나씩)<textarea data-k="feat" rows="4"></textarea></label>
+<label>메모 · 요청사항<textarea data-k="note" rows="3"></textarea></label>
+<div class="cols">${[['skin','피부'],['hair','헤어'],['eyeL','왼눈'],['eyeR','오른눈']].map(([k,l])=>`<label class="col">${l}<input type="color" data-k="${k}"></label>`).join('')}</div>
+<div class="files">${[['pupL','왼눈 동공'],['pupR','오른눈 동공']].map(([k,l])=>`<label>${l}<select data-k="${k}">${PUP.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>`).join('')}</div>
+<label class="chk"><input type="checkbox" data-k="sync"> 양쪽 눈 색·동공 같게</label>
+<div class="files"><label>두상 이미지<input type="file" accept="image/*" data-img="head"></label><label>SD 이미지<input type="file" accept="image/*" data-img="sd"></label></div></section>`}
+$('#forms').innerHTML=form(0)+form(1);
+function sync(){document.querySelectorAll('#forms section').forEach(s=>{const d=S.c[s.dataset.i];
+ s.querySelectorAll('[data-k]').forEach(e=>{const v=d[e.dataset.k];e.type=='checkbox'?e.checked=v:e.value=v});
+ s.querySelectorAll('[data-k=eyeR],[data-k=pupR]').forEach(e=>e.disabled=d.sync)})}
+sync();$('#title').value=S.title;
+$('#forms').addEventListener('input',e=>{const el=e.target,k=el.dataset.k;if(!k)return;const d=S.c[el.closest('section').dataset.i];
+ d[k]=el.type=='checkbox'?el.checked:el.value;if(d.sync){d.eyeR=d.eyeL;d.pupR=d.pupL}sync();go()});
+$('#forms').addEventListener('change',e=>{const el=e.target,k=el.dataset.img;if(!k||!el.files[0])return;const i=el.closest('section').dataset.i;
+ const im=new Image();im.onload=()=>{S.im[i][k]=im;go()};im.src=URL.createObjectURL(el.files[0])});
+$('#title').oninput=e=>{S.title=e.target.value;go()};
+$('#fit').onchange=e=>{S.fit=e.target.value;go()};
+$('#rel').oninput=e=>{S.rel=e.target.value;go()};
+$('#seg').onclick=e=>{const m=e.target.dataset.m;if(!m)return;S.mode=+m;
+ document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));
+ document.querySelectorAll('#forms section')[1].hidden=m==1;$('#relc').hidden=m==1;go()};
+document.querySelectorAll('#forms section')[1].hidden=true;
+$('#dl').onclick=async()=>{const o=document.createElement('canvas');draw(o,2);
+ const blob=await new Promise(r=>o.toBlob(r,'image/png')),fn=`commission-profile-${S.mode}p.png`,m=$('#msg');
+ try{const dls=window.claude&&await claude.use('downloads');
+  if(dls){await dls.save({filename:fn,data:blob});m.textContent='저장했어요.'}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;a.click();m.textContent='다운로드를 시작했어요.'}
+ }catch(err){m.textContent=err&&err.code=='declined'?'저장을 취소했어요.':'저장에 실패했어요. 다시 시도해 주세요.'}};
+draw(cv,1.5);
+Promise.all(['400','500','700'].map(w=>document.fonts.load(`${w} 20px "Noto Sans KR"`,'가나다abc'))).then(go).catch(go);
+</script></body></html>
